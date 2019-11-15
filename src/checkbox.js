@@ -2,6 +2,7 @@ import React, { Fragment } from "react";
 import includes from "lodash/includes";
 import pull from "lodash/pull";
 import map from "lodash/map";
+import { Context } from "./context";
 
 export class CheckBox extends React.Component {
   constructor(props) {
@@ -11,7 +12,7 @@ export class CheckBox extends React.Component {
     };
   }
   onChange = value => {
-    const onChange = this.props.form.onChange;
+    const onChange = this.context.onChange;
     let stateValue = this.state.value;
     if (includes(stateValue, value)) {
       stateValue = pull(stateValue, value);
@@ -44,3 +45,5 @@ export class CheckBox extends React.Component {
     );
   }
 }
+
+CheckBox.contextType = Context;

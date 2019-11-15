@@ -13,6 +13,8 @@ var pull = _interopDefault(require('lodash/pull'));
 var map = _interopDefault(require('lodash/map'));
 var lodash = require('lodash');
 
+var Context = React__default.createContext();
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -133,11 +135,16 @@ var form = function form(settings) {
       createClass(_class2, [{
         key: "render",
         value: function render() {
-          var form = {
-            values: this.state.form,
+          var context = {
+            settings: settings,
+            form: this.state.form,
             onChange: this.onChange
           };
-          return React__default.createElement(WrapperdComponent, _extends({}, this.props, { form: form, settings: settings }));
+          return React__default.createElement(
+            Context.Provider,
+            { value: context },
+            React__default.createElement(WrapperdComponent, this.props)
+          );
         }
       }]);
       return _class2;
@@ -154,7 +161,7 @@ var CheckBox = function (_React$Component) {
     var _this = possibleConstructorReturn(this, (CheckBox.__proto__ || Object.getPrototypeOf(CheckBox)).call(this, props));
 
     _this.onChange = function (value) {
-      var onChange = _this.props.form.onChange;
+      var onChange = _this.context.onChange;
       var stateValue = _this.state.value;
       if (includes(stateValue, value)) {
         stateValue = pull(stateValue, value);
@@ -214,6 +221,8 @@ var CheckBox = function (_React$Component) {
   return CheckBox;
 }(React__default.Component);
 
+CheckBox.contextType = Context;
+
 var multiTypes = ["radio", "checkbox"];
 
 var Item = function (_React$Component) {
@@ -227,10 +236,12 @@ var Item = function (_React$Component) {
   createClass(Item, [{
     key: "render",
     value: function render() {
-      var _props = this.props,
-          form = _props.form,
-          name = _props.field,
-          settings = _props.settings;
+      var name = this.props.field;
+      var _context = this.context,
+          form = _context.form,
+          settings = _context.settings,
+          _onChange = _context.onChange;
+
 
       var setting = lodash.find(settings, { field: name });
       var dep = setting.dep,
@@ -238,10 +249,9 @@ var Item = function (_React$Component) {
           type = setting.type,
           options = setting.options;
 
-
       if (dep) {
         var satisfy = false;
-        var depValue = lodash.get(form, "values." + dep.field);
+        var depValue = lodash.get(form, dep.field);
         if (lodash.isFunction(dep.value)) {
           satisfy = dep.value(depValue);
         } else if (lodash.isEqual(depValue, dep.value)) {
@@ -250,7 +260,7 @@ var Item = function (_React$Component) {
         if (!satisfy) return null;
       }
       if (lodash.includes(multiTypes, type)) {
-        var fieldValue = lodash.get(form, "values." + field);
+        var fieldValue = lodash.get(form, field);
         if (type === "checkbox") {
           return React__default.createElement(CheckBox, _extends({}, this.props, setting, { value: fieldValue }));
         }
@@ -270,7 +280,7 @@ var Item = function (_React$Component) {
                 value: value,
                 checked: fieldValue === value,
                 onChange: function onChange(e) {
-                  return form.onChange(field, value);
+                  return _onChange(field, value);
                 }
               }),
               React__default.createElement(
@@ -290,6 +300,9 @@ var Item = function (_React$Component) {
   return Item;
 }(React__default.Component);
 
+Item.contextType = Context;
+
 exports.form = form;
 exports.Item = Item;
+exports.Context = Context;
 //# sourceMappingURL=index.js.map

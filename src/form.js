@@ -1,6 +1,8 @@
 import React from "react";
 import set from "lodash/set";
 import forEach from "lodash/forEach";
+import { Context } from "./context";
+
 export const form = settings => {
   const initForm = {};
   forEach(settings, ({ field, defaultValue = null }) => {
@@ -29,12 +31,15 @@ export const form = settings => {
         this.setState({ form });
       };
       render() {
-        const form = {
-          values: this.state.form,
+        const context = {
+          settings,
+          form: this.state.form,
           onChange: this.onChange
         };
         return (
-          <WrapperdComponent {...this.props} form={form} settings={settings} />
+          <Context.Provider value={context}>
+            <WrapperdComponent {...this.props} />
+          </Context.Provider>
         );
       }
     };

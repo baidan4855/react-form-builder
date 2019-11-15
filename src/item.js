@@ -1,17 +1,19 @@
 import React, { Fragment } from "react";
 import { includes, map, get, find, isEqual, isFunction } from "lodash";
+import { Context } from "./context.js";
 import { CheckBox } from "./checkbox.js";
 const multiTypes = ["radio", "checkbox"];
 
 export class Item extends React.Component {
   render() {
-    const { form, field: name, settings } = this.props;
+    const { field: name } = this.props;
+    const { form, settings, onChange } = this.context;
+
     const setting = find(settings, { field: name });
     const { dep, field, type, options } = setting;
-
     if (dep) {
       let satisfy = false;
-      const depValue = get(form, `values.${dep.field}`);
+      const depValue = get(form, dep.field);
       if (isFunction(dep.value)) {
         satisfy = dep.value(depValue);
       } else if (isEqual(depValue, dep.value)) {
@@ -20,7 +22,7 @@ export class Item extends React.Component {
       if (!satisfy) return null;
     }
     if (includes(multiTypes, type)) {
-      const fieldValue = get(form, `values.${field}`);
+      const fieldValue = get(form, field);
       if (type === "checkbox") {
         return <CheckBox {...this.props} {...setting} value={fieldValue} />;
       }
@@ -34,7 +36,7 @@ export class Item extends React.Component {
                   name={field}
                   value={value}
                   checked={fieldValue === value}
-                  onChange={e => form.onChange(field, value)}
+                  onChange={e => onChange(field, value)}
                 />
                 <span>{text}</span>
               </span>
@@ -48,3 +50,5 @@ export class Item extends React.Component {
     );
   }
 }
+
+Item.contextType = Context;
