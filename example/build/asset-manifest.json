@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.js": "/react-form-builder/static/js/main.f68dc357.chunk.js",
+    "main.js.map": "/react-form-builder/static/js/main.f68dc357.chunk.js.map",
+    "runtime-main.js": "/react-form-builder/static/js/runtime-main.1147fbb4.js",
+    "runtime-main.js.map": "/react-form-builder/static/js/runtime-main.1147fbb4.js.map",
+    "static/js/2.f864de9b.chunk.js": "/react-form-builder/static/js/2.f864de9b.chunk.js",
+    "static/js/2.f864de9b.chunk.js.map": "/react-form-builder/static/js/2.f864de9b.chunk.js.map",
+    "index.html": "/react-form-builder/index.html",
+    "precache-manifest.0b6ff9c814110b37425be2abaec2f97c.js": "/react-form-builder/precache-manifest.0b6ff9c814110b37425be2abaec2f97c.js",
+    "service-worker.js": "/react-form-builder/service-worker.js"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.1147fbb4.js",
+    "static/js/2.f864de9b.chunk.js",
+    "static/js/main.f68dc357.chunk.js"
+  ]
+}

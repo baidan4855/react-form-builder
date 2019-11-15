@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import includes from "lodash/includes";
 import pull from "lodash/pull";
 import map from "lodash/map";
@@ -25,7 +25,7 @@ export class CheckBox extends React.Component {
   render() {
     const { options, field, value: fieldValue } = this.props;
     return (
-      <>
+      <Fragment>
         {map(options, ({ text, value }) => {
           return (
             <span key={value}>
@@ -40,7 +40,7 @@ export class CheckBox extends React.Component {
             </span>
           );
         })}
-      </>
+      </Fragment>
     );
   }
 }
