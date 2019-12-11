@@ -8,8 +8,9 @@
     "prop-types": "^15.6.2",
     "react": "link:../node_modules/react",
     "react-dom": "link:../node_modules/react-dom",
+    "react-form-builder": "link:..",
     "react-scripts": "link:../node_modules/react-scripts",
-    "react-form-builder": "link:.."
+    "antd": "link:../node_modules/antd"
   },
   "scripts": {
     "start": "react-scripts start",

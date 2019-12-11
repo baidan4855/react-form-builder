@@ -1,54 +1,34 @@
-import React, { Fragment } from "react";
-import { includes, map, get, find, isEqual, isFunction } from "lodash";
-import { Context } from "./context.js";
-import { CheckBox } from "./checkbox.js";
-const multiTypes = ["radio", "checkbox"];
+import React from 'react'
+import { includes, map, get, find, isEqual, isFunction } from 'lodash'
+import { Context } from './context.js'
 
 export class Item extends React.Component {
+  componentWillMount() {
+    const { field, children } = this.props
+    if (!isFunction(children)) {
+      throw Error(`the children of Item "${field}" only accept function`)
+    }
+  }
   render() {
-    const { field: name } = this.props;
-    const { form, settings, onChange } = this.context;
+    const { field: name, children } = this.props
+    const { form, schema, onChange } = this.context
 
-    const setting = find(settings, { field: name });
-    const { dep, field, type, options } = setting;
+    const setting = find(schema, { field: name })
+    const { dep, field, type, options } = setting
     if (dep) {
-      let satisfy = false;
-      const depValue = get(form, dep.field);
-      if (isFunction(dep.value)) {
-        satisfy = dep.value(depValue);
-      } else if (isEqual(depValue, dep.value)) {
-        satisfy = true;
+      let satisfy = false
+      const depValue = get(form, dep.field)
+      if (isFunction(dep.pattern)) {
+        satisfy = dep.pattern(depValue)
+      } else if (isEqual(depValue, dep.pattern)) {
+        satisfy = true
       }
-      if (!satisfy) return null;
+      if (!satisfy) return null
+      dep.value = depValue
     }
-    if (includes(multiTypes, type)) {
-      const fieldValue = get(form, field);
-      if (type === "checkbox") {
-        return <CheckBox {...this.props} {...setting} value={fieldValue} />;
-      }
-      return (
-        <Fragment>
-          {map(options, ({ text, value }) => {
-            return (
-              <span key={value}>
-                <input
-                  type={type}
-                  name={field}
-                  value={value}
-                  checked={fieldValue === value}
-                  onChange={e => onChange(field, value)}
-                />
-                <span>{text}</span>
-              </span>
-            );
-          })}
-        </Fragment>
-      );
-    }
-    return (
-      <input type={type} onChange={e => form.onChange(field, e.target.value)} />
-    );
+    const value = get(form, name)
+    return children({ dep, field, value, type, options, onChange })
   }
 }
 
-Item.contextType = Context;
+Item.contextType = Context

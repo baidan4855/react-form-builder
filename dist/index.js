@@ -4,16 +4,192 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var React = require('react');
-var React__default = _interopDefault(React);
+var antd = require('antd');
 var set = _interopDefault(require('lodash/set'));
+var get = _interopDefault(require('lodash/get'));
 var forEach = _interopDefault(require('lodash/forEach'));
-var includes = _interopDefault(require('lodash/includes'));
-var pull = _interopDefault(require('lodash/pull'));
-var map = _interopDefault(require('lodash/map'));
-var lodash = require('lodash');
+var React = _interopDefault(require('react'));
+var isEmpty = _interopDefault(require('lodash/isEmpty'));
 
-var Context = React__default.createContext();
+/*!
+ * Determine if an object is a Buffer
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+var isBuffer = function isBuffer (obj) {
+  return obj != null && obj.constructor != null &&
+    typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+};
+
+var flat = flatten;
+flatten.flatten = flatten;
+flatten.unflatten = unflatten;
+
+function keyIdentity (key) {
+  return key
+}
+
+function flatten (target, opts) {
+  opts = opts || {};
+
+  const delimiter = opts.delimiter || '.';
+  const maxDepth = opts.maxDepth;
+  const transformKey = opts.transformKey || keyIdentity;
+  const output = {};
+
+  function step (object, prev, currentDepth) {
+    currentDepth = currentDepth || 1;
+    Object.keys(object).forEach(function (key) {
+      const value = object[key];
+      const isarray = opts.safe && Array.isArray(value);
+      const type = Object.prototype.toString.call(value);
+      const isbuffer = isBuffer(value);
+      const isobject = (
+        type === '[object Object]' ||
+        type === '[object Array]'
+      );
+
+      const newKey = prev
+        ? prev + delimiter + transformKey(key)
+        : transformKey(key);
+
+      if (!isarray && !isbuffer && isobject && Object.keys(value).length &&
+        (!opts.maxDepth || currentDepth < maxDepth)) {
+        return step(value, newKey, currentDepth + 1)
+      }
+
+      output[newKey] = value;
+    });
+  }
+
+  step(target);
+
+  return output
+}
+
+function unflatten (target, opts) {
+  opts = opts || {};
+
+  const delimiter = opts.delimiter || '.';
+  const overwrite = opts.overwrite || false;
+  const transformKey = opts.transformKey || keyIdentity;
+  const result = {};
+
+  const isbuffer = isBuffer(target);
+  if (isbuffer || Object.prototype.toString.call(target) !== '[object Object]') {
+    return target
+  }
+
+  // safely ensure that the key is
+  // an integer.
+  function getkey (key) {
+    const parsedKey = Number(key);
+
+    return (
+      isNaN(parsedKey) ||
+      key.indexOf('.') !== -1 ||
+      opts.object
+    ) ? key
+      : parsedKey
+  }
+
+  function addKeys (keyPrefix, recipient, target) {
+    return Object.keys(target).reduce(function (result, key) {
+      result[keyPrefix + delimiter + key] = target[key];
+
+      return result
+    }, recipient)
+  }
+
+  function isEmpty$$1 (val) {
+    const type = Object.prototype.toString.call(val);
+    const isArray = type === '[object Array]';
+    const isObject = type === '[object Object]';
+
+    if (!val) {
+      return true
+    } else if (isArray) {
+      return !val.length
+    } else if (isObject) {
+      return !Object.keys(val).length
+    }
+  }
+
+  target = Object.keys(target).reduce((result, key) => {
+    const type = Object.prototype.toString.call(target[key]);
+    const isObject = (type === '[object Object]' || type === '[object Array]');
+    if (!isObject || isEmpty$$1(target[key])) {
+      result[key] = target[key];
+      return result
+    } else {
+      return addKeys(
+        key,
+        result,
+        flatten(target[key], opts)
+      )
+    }
+  }, {});
+
+  Object.keys(target).forEach(function (key) {
+    const split = key.split(delimiter).map(transformKey);
+    let key1 = getkey(split.shift());
+    let key2 = getkey(split[0]);
+    let recipient = result;
+
+    while (key2 !== undefined) {
+      const type = Object.prototype.toString.call(recipient[key1]);
+      const isobject = (
+        type === '[object Object]' ||
+        type === '[object Array]'
+      );
+
+      // do not write over falsey, non-undefined values if overwrite is false
+      if (!overwrite && !isobject && typeof recipient[key1] !== 'undefined') {
+        return
+      }
+
+      if ((overwrite && !isobject) || (!overwrite && recipient[key1] == null)) {
+        recipient[key1] = (
+          typeof key2 === 'number' &&
+          !opts.object ? [] : {}
+        );
+      }
+
+      recipient = recipient[key1];
+      if (split.length > 0) {
+        key1 = getkey(split.shift());
+        key2 = getkey(split[0]);
+      }
+    }
+
+    // unflatten again for 'messy objects'
+    recipient[key1] = unflatten(target[key], opts);
+  });
+
+  return result
+}
+
+var formCreator = antd.Form.create({
+  mapPropsToFields: function mapPropsToFields(_ref) {
+    var formValues = _ref.formValues,
+        schema = _ref.schema;
+
+    var fields = {};
+    forEach(schema.fields, function (_ref2) {
+      var field = _ref2.field;
+
+      var value = get(formValues, field);
+      set(fields, field, antd.Form.createFormField({ value: value }));
+    });
+    return fields;
+  },
+  onValuesChange: function onValuesChange(props, values) {
+    console.log('props :', props, values);
+    props.onChange && props.onChange(values);
+  }
+});
 
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
@@ -77,232 +253,70 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
-var toConsumableArray = function (arr) {
-  if (Array.isArray(arr)) {
-    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-    return arr2;
-  } else {
-    return Array.from(arr);
-  }
-};
-
-var form = function form(settings) {
-  var initForm = {};
-  forEach(settings, function (_ref) {
+var Form = function Form(schema) {
+  if (!schema) throw Error('must provide schema');
+  if (isEmpty(schema.fields)) throw Error('fields cannot be empty!');
+  var formValues = {};
+  forEach(schema.fields, function (_ref) {
     var field = _ref.field,
-        _ref$defaultValue = _ref.defaultValue,
-        defaultValue = _ref$defaultValue === undefined ? null : _ref$defaultValue;
+        decorator = _ref.decorator;
 
-    set(initForm, field, defaultValue);
+    var initialValue = get(decorator, 'initialValue');
+    if (typeof initialValue !== 'undefined') set(formValues, field, initialValue);
   });
   return function (WrapperdComponent) {
-    return function (_React$Component) {
-      inherits(_class2, _React$Component);
+    var FormMocker = formCreator(WrapperdComponent);
 
-      function _class2(props) {
-        classCallCheck(this, _class2);
+    var Nimama = function (_React$Component) {
+      inherits(Nimama, _React$Component);
 
-        var _this = possibleConstructorReturn(this, (_class2.__proto__ || Object.getPrototypeOf(_class2)).call(this, props));
+      function Nimama(props) {
+        classCallCheck(this, Nimama);
 
-        _this.resetFields = function (form, depField, depValue) {
-          forEach(settings, function (_ref2) {
-            var dep = _ref2.dep,
-                field = _ref2.field,
-                _ref2$defaultValue = _ref2.defaultValue,
-                defaultValue = _ref2$defaultValue === undefined ? null : _ref2$defaultValue;
+        var _this = possibleConstructorReturn(this, (Nimama.__proto__ || Object.getPrototypeOf(Nimama)).call(this, props));
 
-            if (dep && dep.field === depField && dep.value !== depValue) {
-              set(form, field, defaultValue);
-              _this.resetFields(form, field, defaultValue);
-            }
+        _this.onChange = function (changedValues) {
+          var flattened = flat(changedValues);
+          var formValues = _this.state.formValues;
+          forEach(flattened, function (value, key) {
+            set(formValues, key, value);
           });
-        };
-
-        _this.onChange = function (field, value) {
-          var form = _this.state.form;
-          set(form, field, value);
-          _this.resetFields(form, field, value);
-          _this.setState({ form: form });
+          console.log('new values', formValues);
+          // this.resetFields(form, field, value)
+          _this.setState({ formValues: formValues });
         };
 
         _this.state = {
-          form: initForm || {}
+          formValues: formValues
         };
         return _this;
       }
+      // resetFields = (form, depField, depValue) => {
+      //   forEach(settings, ({ dep, field, defaultValue = null }) => {
+      //     if (dep && dep.field === depField && dep.value !== depValue) {
+      //       set(form, field, defaultValue)
+      //       this.resetFields(form, field, defaultValue)
+      //     }
+      //   })
+      // }
 
-      createClass(_class2, [{
-        key: "render",
+
+      createClass(Nimama, [{
+        key: 'render',
         value: function render() {
-          var context = {
-            settings: settings,
-            form: this.state.form,
+          return React.createElement(FormMocker, _extends({}, this.state, {
+            schema: schema
+          }, this.props, {
             onChange: this.onChange
-          };
-          return React__default.createElement(
-            Context.Provider,
-            { value: context },
-            React__default.createElement(WrapperdComponent, this.props)
-          );
+          }));
         }
       }]);
-      return _class2;
-    }(React__default.Component);
+      return Nimama;
+    }(React.Component);
+
+    return Nimama;
   };
 };
 
-var CheckBox = function (_React$Component) {
-  inherits(CheckBox, _React$Component);
-
-  function CheckBox(props) {
-    classCallCheck(this, CheckBox);
-
-    var _this = possibleConstructorReturn(this, (CheckBox.__proto__ || Object.getPrototypeOf(CheckBox)).call(this, props));
-
-    _this.onChange = function (value) {
-      var onChange = _this.context.onChange;
-      var stateValue = _this.state.value;
-      if (includes(stateValue, value)) {
-        stateValue = pull(stateValue, value);
-      } else {
-        stateValue = [].concat(toConsumableArray(stateValue), [value]);
-      }
-      _this.setState({ value: stateValue }, function () {
-        onChange(_this.props.field, _this.state.value);
-      });
-    };
-
-    _this.state = {
-      value: props.value || props.defaultValue || []
-    };
-    return _this;
-  }
-
-  createClass(CheckBox, [{
-    key: "render",
-    value: function render() {
-      var _this2 = this;
-
-      var _props = this.props,
-          options = _props.options,
-          field = _props.field,
-          fieldValue = _props.value;
-
-      return React__default.createElement(
-        React.Fragment,
-        null,
-        map(options, function (_ref) {
-          var text = _ref.text,
-              value = _ref.value;
-
-          return React__default.createElement(
-            "span",
-            { key: value },
-            React__default.createElement("input", {
-              type: "checkbox",
-              name: field,
-              value: value,
-              checked: includes(fieldValue, value),
-              onChange: function onChange() {
-                return _this2.onChange(value);
-              }
-            }),
-            React__default.createElement(
-              "span",
-              null,
-              text
-            )
-          );
-        })
-      );
-    }
-  }]);
-  return CheckBox;
-}(React__default.Component);
-
-CheckBox.contextType = Context;
-
-var multiTypes = ["radio", "checkbox"];
-
-var Item = function (_React$Component) {
-  inherits(Item, _React$Component);
-
-  function Item() {
-    classCallCheck(this, Item);
-    return possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).apply(this, arguments));
-  }
-
-  createClass(Item, [{
-    key: "render",
-    value: function render() {
-      var name = this.props.field;
-      var _context = this.context,
-          form = _context.form,
-          settings = _context.settings,
-          _onChange = _context.onChange;
-
-
-      var setting = lodash.find(settings, { field: name });
-      var dep = setting.dep,
-          field = setting.field,
-          type = setting.type,
-          options = setting.options;
-
-      if (dep) {
-        var satisfy = false;
-        var depValue = lodash.get(form, dep.field);
-        if (lodash.isFunction(dep.value)) {
-          satisfy = dep.value(depValue);
-        } else if (lodash.isEqual(depValue, dep.value)) {
-          satisfy = true;
-        }
-        if (!satisfy) return null;
-      }
-      if (lodash.includes(multiTypes, type)) {
-        var fieldValue = lodash.get(form, field);
-        if (type === "checkbox") {
-          return React__default.createElement(CheckBox, _extends({}, this.props, setting, { value: fieldValue }));
-        }
-        return React__default.createElement(
-          React.Fragment,
-          null,
-          lodash.map(options, function (_ref) {
-            var text = _ref.text,
-                value = _ref.value;
-
-            return React__default.createElement(
-              "span",
-              { key: value },
-              React__default.createElement("input", {
-                type: type,
-                name: field,
-                value: value,
-                checked: fieldValue === value,
-                onChange: function onChange(e) {
-                  return _onChange(field, value);
-                }
-              }),
-              React__default.createElement(
-                "span",
-                null,
-                text
-              )
-            );
-          })
-        );
-      }
-      return React__default.createElement("input", { type: type, onChange: function onChange(e) {
-          return form.onChange(field, e.target.value);
-        } });
-    }
-  }]);
-  return Item;
-}(React__default.Component);
-
-Item.contextType = Context;
-
-exports.form = form;
-exports.Item = Item;
-exports.Context = Context;
+exports.Form = Form;
 //# sourceMappingURL=index.js.map
