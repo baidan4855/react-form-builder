@@ -1,9 +1,12 @@
-import { Form } from 'antd';
+import * as Antd from 'antd';
+import { Form, Input } from 'antd';
 import set from 'lodash/set';
 import get from 'lodash/get';
 import forEach from 'lodash/forEach';
 import React from 'react';
-import isEmpty from 'lodash/isEmpty';
+import { get as get$1, find, isEqual, isFunction, isEmpty, map } from 'lodash';
+import isEmpty$1 from 'lodash/isEmpty';
+import 'lodash/isFunction';
 
 /*!
  * Determine if an object is a Buffer
@@ -247,9 +250,107 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
+var DataComponents = {
+  Antd: Antd
+};
+
+var itemGenerator = function itemGenerator(_ref) {
+  var schema = _ref.schema,
+      formValues = _ref.formValues,
+      form = _ref.form;
+  return function (props) {
+    var field = props.field,
+        ChildElement = props.children;
+
+    var fieldSetting = find(schema.fields, { field: field });
+    var dep = fieldSetting.dep,
+        _fieldSetting$propsFo = fieldSetting.propsForItem,
+        propsForItem = _fieldSetting$propsFo === undefined ? {} : _fieldSetting$propsFo,
+        decorator = fieldSetting.decorator,
+        children = fieldSetting.children;
+
+    if (dep) {
+      var satisfy = false;
+      var depValue = get$1(formValues, dep.field);
+      if (isFunction(dep.pattern)) {
+        satisfy = dep.pattern(depValue);
+      } else if (isEqual(depValue, dep.pattern)) {
+        satisfy = true;
+      }
+      if (!satisfy) return null;
+    }
+    var Component = void 0;
+    if (React.isValidElement(ChildElement)) {
+      Component = ChildElement;
+    } else if (children) {
+      var component = children.component,
+          childProps = children.props,
+          optionComponent = children.optionComponent,
+          options = children.options;
+
+      Component = get$1(DataComponents, component || null);
+      if (Component) {
+        if (!isEmpty(options) && !optionComponent) {
+          throw new Error('"' + field + '" options specified, but optionComponent NOT');
+        }
+        if (!!optionComponent && isEmpty(options)) {
+          throw new Error('"' + field + '" optionComponent specified, but options is empty');
+        }
+        var Option = get$1(DataComponents, optionComponent);
+        if (!Option) {
+          throw new Error('"' + field + '" "' + optionComponent + '" not found');
+        }
+        Component = React.createElement(
+          Component,
+          _extends({ key: field }, childProps),
+          map(options, function (_ref2) {
+            var text = _ref2.text,
+                value = _ref2.value;
+            return React.createElement(
+              Option,
+              { value: value },
+              text
+            );
+          })
+        );
+      }
+    } else {
+      Component = React.createElement(Input, { key: field });
+    }
+    return React.createElement(
+      Form.Item,
+      propsForItem,
+      form.getFieldDecorator(field, decorator)(Component)
+    );
+  };
+};
+
+var item = function item(WrapperdComponent) {
+  return function (_React$Component) {
+    inherits(_class, _React$Component);
+
+    function _class(props) {
+      classCallCheck(this, _class);
+
+      var _this = possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this, props));
+
+      _this.Item = itemGenerator(props);
+      return _this;
+    }
+
+    createClass(_class, [{
+      key: 'render',
+      value: function render() {
+        return React.createElement(WrapperdComponent, _extends({}, this.Props, { Item: this.Item }));
+      }
+    }]);
+    return _class;
+  }(React.Component);
+};
+
 var Form$1 = function Form$$1(schema) {
   if (!schema) throw Error('must provide schema');
-  if (isEmpty(schema.fields)) throw Error('fields cannot be empty!');
+  if (isEmpty$1(schema.fields)) throw Error('fields cannot be empty!');
   var formValues = {};
   forEach(schema.fields, function (_ref) {
     var field = _ref.field,
@@ -259,7 +360,7 @@ var Form$1 = function Form$$1(schema) {
     if (typeof initialValue !== 'undefined') set(formValues, field, initialValue);
   });
   return function (WrapperdComponent) {
-    var FormMocker = formCreator(WrapperdComponent);
+    var FormMocker = formCreator(item(WrapperdComponent));
 
     var Nimama = function (_React$Component) {
       inherits(Nimama, _React$Component);

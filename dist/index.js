@@ -4,12 +4,14 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var antd = require('antd');
+var Antd = require('antd');
 var set = _interopDefault(require('lodash/set'));
 var get = _interopDefault(require('lodash/get'));
 var forEach = _interopDefault(require('lodash/forEach'));
 var React = _interopDefault(require('react'));
+var lodash = require('lodash');
 var isEmpty = _interopDefault(require('lodash/isEmpty'));
+require('lodash/isFunction');
 
 /*!
  * Determine if an object is a Buffer
@@ -171,7 +173,7 @@ function unflatten (target, opts) {
   return result
 }
 
-var formCreator = antd.Form.create({
+var formCreator = Antd.Form.create({
   mapPropsToFields: function mapPropsToFields(_ref) {
     var formValues = _ref.formValues,
         schema = _ref.schema;
@@ -181,7 +183,7 @@ var formCreator = antd.Form.create({
       var field = _ref2.field;
 
       var value = get(formValues, field);
-      set(fields, field, antd.Form.createFormField({ value: value }));
+      set(fields, field, Antd.Form.createFormField({ value: value }));
     });
     return fields;
   },
@@ -253,6 +255,104 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
+var DataComponents = {
+  Antd: Antd
+};
+
+var itemGenerator = function itemGenerator(_ref) {
+  var schema = _ref.schema,
+      formValues = _ref.formValues,
+      form = _ref.form;
+  return function (props) {
+    var field = props.field,
+        ChildElement = props.children;
+
+    var fieldSetting = lodash.find(schema.fields, { field: field });
+    var dep = fieldSetting.dep,
+        _fieldSetting$propsFo = fieldSetting.propsForItem,
+        propsForItem = _fieldSetting$propsFo === undefined ? {} : _fieldSetting$propsFo,
+        decorator = fieldSetting.decorator,
+        children = fieldSetting.children;
+
+    if (dep) {
+      var satisfy = false;
+      var depValue = lodash.get(formValues, dep.field);
+      if (lodash.isFunction(dep.pattern)) {
+        satisfy = dep.pattern(depValue);
+      } else if (lodash.isEqual(depValue, dep.pattern)) {
+        satisfy = true;
+      }
+      if (!satisfy) return null;
+    }
+    var Component = void 0;
+    if (React.isValidElement(ChildElement)) {
+      Component = ChildElement;
+    } else if (children) {
+      var component = children.component,
+          childProps = children.props,
+          optionComponent = children.optionComponent,
+          options = children.options;
+
+      Component = lodash.get(DataComponents, component || null);
+      if (Component) {
+        if (!lodash.isEmpty(options) && !optionComponent) {
+          throw new Error('"' + field + '" options specified, but optionComponent NOT');
+        }
+        if (!!optionComponent && lodash.isEmpty(options)) {
+          throw new Error('"' + field + '" optionComponent specified, but options is empty');
+        }
+        var Option = lodash.get(DataComponents, optionComponent);
+        if (!Option) {
+          throw new Error('"' + field + '" "' + optionComponent + '" not found');
+        }
+        Component = React.createElement(
+          Component,
+          _extends({ key: field }, childProps),
+          lodash.map(options, function (_ref2) {
+            var text = _ref2.text,
+                value = _ref2.value;
+            return React.createElement(
+              Option,
+              { value: value },
+              text
+            );
+          })
+        );
+      }
+    } else {
+      Component = React.createElement(Antd.Input, { key: field });
+    }
+    return React.createElement(
+      Antd.Form.Item,
+      propsForItem,
+      form.getFieldDecorator(field, decorator)(Component)
+    );
+  };
+};
+
+var item = function item(WrapperdComponent) {
+  return function (_React$Component) {
+    inherits(_class, _React$Component);
+
+    function _class(props) {
+      classCallCheck(this, _class);
+
+      var _this = possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this, props));
+
+      _this.Item = itemGenerator(props);
+      return _this;
+    }
+
+    createClass(_class, [{
+      key: 'render',
+      value: function render() {
+        return React.createElement(WrapperdComponent, _extends({}, this.Props, { Item: this.Item }));
+      }
+    }]);
+    return _class;
+  }(React.Component);
+};
+
 var Form = function Form(schema) {
   if (!schema) throw Error('must provide schema');
   if (isEmpty(schema.fields)) throw Error('fields cannot be empty!');
@@ -265,7 +365,7 @@ var Form = function Form(schema) {
     if (typeof initialValue !== 'undefined') set(formValues, field, initialValue);
   });
   return function (WrapperdComponent) {
-    var FormMocker = formCreator(WrapperdComponent);
+    var FormMocker = formCreator(item(WrapperdComponent));
 
     var Nimama = function (_React$Component) {
       inherits(Nimama, _React$Component);

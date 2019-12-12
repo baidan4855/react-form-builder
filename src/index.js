@@ -2,9 +2,11 @@ import React from 'react'
 import set from 'lodash/set'
 import forEach from 'lodash/forEach'
 import isEmpty from 'lodash/isEmpty'
+import isFunction from 'lodash/isFunction'
 import get from 'lodash/get'
 import flat from 'flat'
 import formCreator from './form'
+import { item } from './itemHOC'
 
 export const Form = schema => {
   if (!schema) throw Error('must provide schema')
@@ -16,7 +18,7 @@ export const Form = schema => {
       set(formValues, field, initialValue)
   })
   return WrapperdComponent => {
-    const FormMocker = formCreator(WrapperdComponent)
+    const FormMocker = formCreator(item(WrapperdComponent))
     class Nimama extends React.Component {
       constructor(props) {
         super(props)
