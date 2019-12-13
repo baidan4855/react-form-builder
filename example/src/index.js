@@ -1,65 +1,69 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { includes } from 'lodash'
-import { Form as forme } from 'react-form-builder'
-import { Form, Radio, Input } from 'antd'
+import { dyform, Item } from 'react-form-builder'
+import { Form } from 'antd'
 
+import './App.css'
 class TestForm extends React.Component {
-  componentWillMount() {
-    console.log('componentWillMount')
-  }
-  componentWillUpdate() {
-    console.log('componentWillUpdate')
-  }
   render() {
-    console.log('render')
-    const { Item, form } = this.props
     return (
-      <Form>
-        {/* <Item key={'single'} field="single"></Item> */}
-        <Item key={'text'} field="text" form={form}></Item>
+      <Form layout="inline">
+        <Item field="single"></Item>
+        <Item field="history.illness"></Item>
       </Form>
     )
   }
 }
 
-const App = forme({
+const App = dyform({
   fields: [
-    // {
-    //   propsForItem: {
-    //     label: '单选',
-    //   },
-    //   field: 'single',
-    //   decorator: {
-    //     rules: [{ required: true, message: 'fuck u' }],
-    //     initialValue: true,
-    //   },
-    //   children: {
-    //     component: 'Antd.Radio.Group',
-    //     props: null,
-    //     optionComponent: 'Antd.Radio',
-    //     options: [
-    //       {
-    //         text: '无',
-    //         value: false,
-    //       },
-    //       { text: '有', value: true },
-    //     ],
-    //   },
-    // },
     {
       propsForItem: {
-        label: '文本',
+        label: '有无病史',
       },
-      field: 'text',
+      field: 'single',
       decorator: {
         rules: [{ required: true, message: 'fuck u' }],
-        initialValue: '我好方',
+        initialValue: true,
       },
-      // dep: {
-      //   field: 'single',
-      //   pattern: true,
-      // },
+      children: {
+        component: 'Antd.Radio.Group',
+        props: null,
+        optionComponent: 'Antd.Radio',
+        options: [
+          {
+            text: '无',
+            value: false,
+          },
+          { text: '有', value: true },
+        ],
+      },
+    },
+    {
+      propsForItem: {
+        label: '病史',
+      },
+      field: 'history.illness',
+      decorator: {
+        rules: [{ required: true, message: 'fuck u' }],
+        initialValue: ['foot'],
+      },
+      children: {
+        component: 'Antd.Checkbox.Group',
+        props: null,
+        optionComponent: 'Antd.Checkbox',
+        options: [
+          {
+            text: '足溃疡',
+            value: 'foot',
+          },
+          { text: '截肢', value: 'lose' },
+        ],
+      },
+      dep: {
+        field: 'single',
+        pattern: true,
+      },
     },
   ],
 })(TestForm)

@@ -1,192 +1,22 @@
+import React from 'react';
+import isEqual from 'lodash/isEqual';
+import isFunction from 'lodash/isFunction';
+import get from 'lodash/get';
+import isEmpty from 'lodash/isEmpty';
+import forEach from 'lodash/forEach';
+import 'lodash/pick';
+import set from 'lodash/set';
 import * as Antd from 'antd';
 import { Form, Input } from 'antd';
-import set from 'lodash/set';
-import get from 'lodash/get';
-import forEach from 'lodash/forEach';
-import React from 'react';
-import { get as get$1, find, isEqual, isFunction, isEmpty, map } from 'lodash';
-import isEmpty$1 from 'lodash/isEmpty';
-import 'lodash/isFunction';
+import flowRight from 'lodash/flowRight';
+import cloneDeep from 'lodash/cloneDeep';
+import { get as get$1, find, isEmpty as isEmpty$1, map } from 'lodash';
 
-/*!
- * Determine if an object is a Buffer
- *
- * @author   Feross Aboukhadijeh <https://feross.org>
- * @license  MIT
- */
-
-var isBuffer = function isBuffer (obj) {
-  return obj != null && obj.constructor != null &&
-    typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
-};
-
-var flat = flatten;
-flatten.flatten = flatten;
-flatten.unflatten = unflatten;
-
-function keyIdentity (key) {
-  return key
-}
-
-function flatten (target, opts) {
-  opts = opts || {};
-
-  const delimiter = opts.delimiter || '.';
-  const maxDepth = opts.maxDepth;
-  const transformKey = opts.transformKey || keyIdentity;
-  const output = {};
-
-  function step (object, prev, currentDepth) {
-    currentDepth = currentDepth || 1;
-    Object.keys(object).forEach(function (key) {
-      const value = object[key];
-      const isarray = opts.safe && Array.isArray(value);
-      const type = Object.prototype.toString.call(value);
-      const isbuffer = isBuffer(value);
-      const isobject = (
-        type === '[object Object]' ||
-        type === '[object Array]'
-      );
-
-      const newKey = prev
-        ? prev + delimiter + transformKey(key)
-        : transformKey(key);
-
-      if (!isarray && !isbuffer && isobject && Object.keys(value).length &&
-        (!opts.maxDepth || currentDepth < maxDepth)) {
-        return step(value, newKey, currentDepth + 1)
-      }
-
-      output[newKey] = value;
-    });
-  }
-
-  step(target);
-
-  return output
-}
-
-function unflatten (target, opts) {
-  opts = opts || {};
-
-  const delimiter = opts.delimiter || '.';
-  const overwrite = opts.overwrite || false;
-  const transformKey = opts.transformKey || keyIdentity;
-  const result = {};
-
-  const isbuffer = isBuffer(target);
-  if (isbuffer || Object.prototype.toString.call(target) !== '[object Object]') {
-    return target
-  }
-
-  // safely ensure that the key is
-  // an integer.
-  function getkey (key) {
-    const parsedKey = Number(key);
-
-    return (
-      isNaN(parsedKey) ||
-      key.indexOf('.') !== -1 ||
-      opts.object
-    ) ? key
-      : parsedKey
-  }
-
-  function addKeys (keyPrefix, recipient, target) {
-    return Object.keys(target).reduce(function (result, key) {
-      result[keyPrefix + delimiter + key] = target[key];
-
-      return result
-    }, recipient)
-  }
-
-  function isEmpty$$1 (val) {
-    const type = Object.prototype.toString.call(val);
-    const isArray = type === '[object Array]';
-    const isObject = type === '[object Object]';
-
-    if (!val) {
-      return true
-    } else if (isArray) {
-      return !val.length
-    } else if (isObject) {
-      return !Object.keys(val).length
-    }
-  }
-
-  target = Object.keys(target).reduce((result, key) => {
-    const type = Object.prototype.toString.call(target[key]);
-    const isObject = (type === '[object Object]' || type === '[object Array]');
-    if (!isObject || isEmpty$$1(target[key])) {
-      result[key] = target[key];
-      return result
-    } else {
-      return addKeys(
-        key,
-        result,
-        flatten(target[key], opts)
-      )
-    }
-  }, {});
-
-  Object.keys(target).forEach(function (key) {
-    const split = key.split(delimiter).map(transformKey);
-    let key1 = getkey(split.shift());
-    let key2 = getkey(split[0]);
-    let recipient = result;
-
-    while (key2 !== undefined) {
-      const type = Object.prototype.toString.call(recipient[key1]);
-      const isobject = (
-        type === '[object Object]' ||
-        type === '[object Array]'
-      );
-
-      // do not write over falsey, non-undefined values if overwrite is false
-      if (!overwrite && !isobject && typeof recipient[key1] !== 'undefined') {
-        return
-      }
-
-      if ((overwrite && !isobject) || (!overwrite && recipient[key1] == null)) {
-        recipient[key1] = (
-          typeof key2 === 'number' &&
-          !opts.object ? [] : {}
-        );
-      }
-
-      recipient = recipient[key1];
-      if (split.length > 0) {
-        key1 = getkey(split.shift());
-        key2 = getkey(split[0]);
-      }
-    }
-
-    // unflatten again for 'messy objects'
-    recipient[key1] = unflatten(target[key], opts);
-  });
-
-  return result
-}
-
-var formCreator = Form.create({
-  mapPropsToFields: function mapPropsToFields(_ref) {
-    var formValues = _ref.formValues,
-        schema = _ref.schema;
-
-    var fields = {};
-    forEach(schema.fields, function (_ref2) {
-      var field = _ref2.field;
-
-      var value = get(formValues, field);
-      set(fields, field, Form.createFormField({ value: value }));
-    });
-    return fields;
-  },
-  onValuesChange: function onValuesChange(props, values) {
-    console.log('props :', props, values);
-    props.onChange && props.onChange(values);
-  }
+var Context = React.createContext({
+  values: {},
+  schema: null
 });
+Context.displayName = 'DynamicForm';
 
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
@@ -250,168 +80,262 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
-var DataComponents = {
-  Antd: Antd
+var toConsumableArray = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
 };
 
-var itemGenerator = function itemGenerator(_ref) {
-  var schema = _ref.schema,
-      formValues = _ref.formValues,
-      form = _ref.form;
-  return function (props) {
-    var field = props.field,
-        ChildElement = props.children;
-
-    var fieldSetting = find(schema.fields, { field: field });
-    var dep = fieldSetting.dep,
-        _fieldSetting$propsFo = fieldSetting.propsForItem,
-        propsForItem = _fieldSetting$propsFo === undefined ? {} : _fieldSetting$propsFo,
-        decorator = fieldSetting.decorator,
-        children = fieldSetting.children;
-
-    if (dep) {
-      var satisfy = false;
-      var depValue = get$1(formValues, dep.field);
-      if (isFunction(dep.pattern)) {
-        satisfy = dep.pattern(depValue);
-      } else if (isEqual(depValue, dep.pattern)) {
-        satisfy = true;
-      }
-      if (!satisfy) return null;
-    }
-    var Component = void 0;
-    if (React.isValidElement(ChildElement)) {
-      Component = ChildElement;
-    } else if (children) {
-      var component = children.component,
-          childProps = children.props,
-          optionComponent = children.optionComponent,
-          options = children.options;
-
-      Component = get$1(DataComponents, component || null);
-      if (Component) {
-        if (!isEmpty(options) && !optionComponent) {
-          throw new Error('"' + field + '" options specified, but optionComponent NOT');
-        }
-        if (!!optionComponent && isEmpty(options)) {
-          throw new Error('"' + field + '" optionComponent specified, but options is empty');
-        }
-        var Option = get$1(DataComponents, optionComponent);
-        if (!Option) {
-          throw new Error('"' + field + '" "' + optionComponent + '" not found');
-        }
-        Component = React.createElement(
-          Component,
-          _extends({ key: field }, childProps),
-          map(options, function (_ref2) {
-            var text = _ref2.text,
-                value = _ref2.value;
-            return React.createElement(
-              Option,
-              { value: value },
-              text
-            );
-          })
-        );
-      }
-    } else {
-      Component = React.createElement(Input, { key: field });
-    }
-    return React.createElement(
-      Form.Item,
-      propsForItem,
-      form.getFieldDecorator(field, decorator)(Component)
-    );
-  };
+var compare = function compare(form, dep) {
+  var depValue = get(form, dep.field);
+  if (isFunction(dep.pattern)) {
+    return dep.pattern(depValue, form);
+  }
+  return isEqual(depValue, dep.pattern);
 };
 
-var item = function item(WrapperdComponent) {
-  return function (_React$Component) {
-    inherits(_class, _React$Component);
-
-    function _class(props) {
-      classCallCheck(this, _class);
-
-      var _this = possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this, props));
-
-      _this.Item = itemGenerator(props);
-      return _this;
-    }
-
-    createClass(_class, [{
-      key: 'render',
-      value: function render() {
-        return React.createElement(WrapperdComponent, _extends({}, this.Props, { Item: this.Item }));
-      }
-    }]);
-    return _class;
-  }(React.Component);
-};
-
-var Form$1 = function Form$$1(schema) {
+var getInitialValue = function getInitialValue(schema) {
   if (!schema) throw Error('must provide schema');
-  if (isEmpty$1(schema.fields)) throw Error('fields cannot be empty!');
-  var formValues = {};
+  if (isEmpty(schema.fields)) throw Error('fields cannot be empty!');
+  var values = {};
   forEach(schema.fields, function (_ref) {
     var field = _ref.field,
         decorator = _ref.decorator;
 
     var initialValue = get(decorator, 'initialValue');
-    if (typeof initialValue !== 'undefined') set(formValues, field, initialValue);
+    if (typeof initialValue !== 'undefined') set(values, field, initialValue);
   });
+  return values;
+};
+
+var digValues = function digValues(changedFields) {
+  var result = [];
+  forEach(changedFields, function (val) {
+    if (val.name) {
+      result.push(val);
+    } else {
+      result = [].concat(toConsumableArray(result), toConsumableArray(digValues(val)));
+    }
+  });
+  return result;
+};
+
+var antform = Form.create({
+  mapPropsToFields: function mapPropsToFields(_ref) {
+    var schema = _ref.schema,
+        fields = _ref.fields;
+
+    var result = {};
+    forEach(schema.fields, function (_ref2) {
+      var field = _ref2.field;
+
+      var value = get(fields, field);
+      set(result, field, Form.createFormField(value));
+    });
+    return result;
+  },
+  onFieldsChange: function onFieldsChange(props, values) {
+    props.onChange && props.onChange(values);
+  }
+});
+
+var stateHolder = function stateHolder(schema) {
+  var initialValue = getInitialValue(schema);
   return function (WrapperdComponent) {
-    var FormMocker = formCreator(item(WrapperdComponent));
+    return function (_React$Component) {
+      inherits(StateHolder, _React$Component);
 
-    var Nimama = function (_React$Component) {
-      inherits(Nimama, _React$Component);
+      function StateHolder(props) {
+        classCallCheck(this, StateHolder);
 
-      function Nimama(props) {
-        classCallCheck(this, Nimama);
+        var _this = possibleConstructorReturn(this, (StateHolder.__proto__ || Object.getPrototypeOf(StateHolder)).call(this, props));
 
-        var _this = possibleConstructorReturn(this, (Nimama.__proto__ || Object.getPrototypeOf(Nimama)).call(this, props));
+        _this.resetFields = function (form, fields, depField, depValue) {
+          var schemaFields = schema.fields;
+          forEach(schemaFields, function (_ref) {
+            var dep = _ref.dep,
+                field = _ref.field,
+                decorator = _ref.decorator;
 
-        _this.onChange = function (changedValues) {
-          var flattened = flat(changedValues);
-          var formValues = _this.state.formValues;
-          forEach(flattened, function (value, key) {
-            set(formValues, key, value);
+            if (dep && dep.field === depField && dep.value !== depValue) {
+              var _initialValue = get(decorator, 'initialValue', null);
+              set(form, field, _initialValue);
+              set(fields, '' + field, _initialValue);
+              _this.resetFields(form, fields, field, _initialValue);
+            }
           });
-          console.log('new values', formValues);
-          // this.resetFields(form, field, value)
-          _this.setState({ formValues: formValues });
+        };
+
+        _this.onChange = function (changedFields) {
+          var values = digValues(changedFields);
+
+          var formValues = cloneDeep(_this.state.formValues);
+          var fields = cloneDeep(_this.state.fields);
+          forEach(values, function (field) {
+            var name = field.name,
+                value = field.value;
+
+            set(formValues, name, value);
+            set(fields, name, field);
+            _this.resetFields(formValues, fields, name, value);
+          });
+          console.log('formValues', formValues);
+          console.log('fields', fields);
+          _this.setState({ formValues: formValues, fields: fields });
+        };
+
+        _this.setForm = function (form) {
+          return _this.setState({ form: form });
         };
 
         _this.state = {
-          formValues: formValues
+          formValues: initialValue,
+          fields: initialValue,
+          schema: schema,
+          setForm: _this.setForm
         };
         return _this;
       }
-      // resetFields = (form, depField, depValue) => {
-      //   forEach(settings, ({ dep, field, defaultValue = null }) => {
-      //     if (dep && dep.field === depField && dep.value !== depValue) {
-      //       set(form, field, defaultValue)
-      //       this.resetFields(form, field, defaultValue)
-      //     }
-      //   })
-      // }
 
-
-      createClass(Nimama, [{
+      createClass(StateHolder, [{
         key: 'render',
         value: function render() {
-          return React.createElement(FormMocker, _extends({}, this.state, {
-            schema: schema
-          }, this.props, {
-            onChange: this.onChange
-          }));
+          return React.createElement(
+            Context.Provider,
+            { value: this.state },
+            React.createElement(WrapperdComponent, _extends({}, this.props, this.state, {
+              onChange: this.onChange
+            }))
+          );
         }
       }]);
-      return Nimama;
+      return StateHolder;
     }(React.Component);
-
-    return Nimama;
   };
 };
 
-export { Form$1 as Form };
+var formSetter = function formSetter(WrapperdComponent) {
+  var FormSetter = function (_React$PureComponent) {
+    inherits(FormSetter, _React$PureComponent);
+
+    function FormSetter() {
+      classCallCheck(this, FormSetter);
+      return possibleConstructorReturn(this, (FormSetter.__proto__ || Object.getPrototypeOf(FormSetter)).apply(this, arguments));
+    }
+
+    createClass(FormSetter, [{
+      key: 'render',
+      value: function render() {
+        if (this.props.form && !this.context.form) {
+          this.context.setForm(this.props.form);
+          return null;
+        }
+        return React.createElement(WrapperdComponent, this.props);
+      }
+    }]);
+    return FormSetter;
+  }(React.PureComponent);
+
+  FormSetter.contextType = Context;
+  return FormSetter;
+};
+
+var dyform = function dyform(schema) {
+  return flowRight(stateHolder(schema), antform, formSetter);
+};
+
+var DataComponents = {
+  Antd: Antd
+};
+
+var Item = function (_React$Component) {
+  inherits(Item, _React$Component);
+
+  function Item() {
+    classCallCheck(this, Item);
+    return possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).apply(this, arguments));
+  }
+
+  createClass(Item, [{
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      return React.createElement(
+        Context.Consumer,
+        null,
+        function (_ref) {
+          var formValues = _ref.formValues,
+              schema = _ref.schema,
+              form = _ref.form;
+          var _props = _this2.props,
+              field = _props.field,
+              ChildElement = _props.children;
+
+          var fieldSetting = find(schema.fields, { field: field });
+          var dep = fieldSetting.dep,
+              _fieldSetting$propsFo = fieldSetting.propsForItem,
+              propsForItem = _fieldSetting$propsFo === undefined ? {} : _fieldSetting$propsFo,
+              decorator = fieldSetting.decorator,
+              children = fieldSetting.children;
+
+          if (dep && !compare(formValues, dep)) {
+            return null;
+          }
+          var Component = void 0;
+          if (React.isValidElement(ChildElement)) {
+            Component = ChildElement;
+          } else if (children) {
+            var component = children.component,
+                childProps = children.props,
+                optionComponent = children.optionComponent,
+                options = children.options;
+
+            Component = get$1(DataComponents, component || null);
+            if (Component) {
+              if (!isEmpty$1(options) && !optionComponent) {
+                throw new Error('"' + field + '" options specified, but optionComponent NOT');
+              }
+              if (!!optionComponent && isEmpty$1(options)) {
+                throw new Error('"' + field + '" optionComponent specified, but options is empty');
+              }
+              var Option = get$1(DataComponents, optionComponent);
+              if (!Option) {
+                throw new Error('"' + field + '" "' + optionComponent + '" not found');
+              }
+              Component = React.createElement(
+                Component,
+                childProps,
+                map(options, function (_ref2) {
+                  var text = _ref2.text,
+                      value = _ref2.value;
+                  return React.createElement(
+                    Option,
+                    { key: '' + value + text, value: value },
+                    text
+                  );
+                })
+              );
+            }
+          } else {
+            Component = React.createElement(Input, null);
+          }
+          return React.createElement(
+            Form.Item,
+            _extends({ key: field }, propsForItem),
+            form.getFieldDecorator(field, decorator)(Component)
+          );
+        }
+      );
+    }
+  }]);
+  return Item;
+}(React.Component);
+Item.contextType = Context;
+
+export { dyform, Item };
 //# sourceMappingURL=index.es.js.map

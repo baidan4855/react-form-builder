@@ -4,16 +4,15 @@ import get from 'lodash/get'
 import forEach from 'lodash/forEach'
 
 export default Form.create({
-  mapPropsToFields({ formValues, schema }) {
-    const fields = {}
+  mapPropsToFields({ schema, fields }) {
+    const result = {}
     forEach(schema.fields, ({ field }) => {
-      const value = get(formValues, field)
-      set(fields, field, Form.createFormField({ value }))
+      const value = get(fields, field)
+      set(result, field, Form.createFormField(value))
     })
-    return fields
+    return result
   },
-  onValuesChange(props, values) {
-    console.log('props :', props, values)
+  onFieldsChange(props, values) {
     props.onChange && props.onChange(values)
   },
 })
