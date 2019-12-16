@@ -8,8 +8,13 @@ class TestForm extends React.Component {
   render() {
     return (
       <Form layout="inline">
-        <Item field="single"></Item>
-        <Item field="history.illness"></Item>
+        <div>
+          <div>患者病史</div>
+          <div>
+            <Item field="single"></Item>
+            <Item field="history.illness"></Item>
+          </div>
+        </div>
       </Form>
     )
   }
@@ -44,21 +49,8 @@ const App = dyform({
         label: '病史',
       },
       field: 'history.illness',
-      decorator: {
-        rules: [{ required: true, message: 'fuck u' }],
-        initialValue: ['foot'],
-      },
       children: {
-        component: 'Antd.Checkbox.Group',
-        props: null,
-        optionComponent: 'Antd.Checkbox',
-        options: [
-          {
-            text: '足溃疡',
-            value: 'foot',
-          },
-          { text: '截肢', value: 'lose' },
-        ],
+        component: 'Antd.Checkbox',
       },
       dep: {
         field: 'single',

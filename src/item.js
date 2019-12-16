@@ -42,19 +42,23 @@ export class Item extends React.Component {
                   `"${field}" optionComponent specified, but options is empty`
                 )
               }
-              const Option = get(DataComponents, optionComponent)
-              if (!Option) {
-                throw new Error(`"${field}" "${optionComponent}" not found`)
+              if (!!optionComponent && !isEmpty(options)) {
+                const Option = get(DataComponents, optionComponent)
+                if (!Option) {
+                  throw new Error(`"${field}" "${optionComponent}" not found`)
+                }
+                Component = (
+                  <Component {...childProps}>
+                    {map(options, ({ text, value }) => (
+                      <Option key={`${value}${text}`} value={value}>
+                        {text}
+                      </Option>
+                    ))}
+                  </Component>
+                )
+              } else {
+                Component = <Component {...childProps} />
               }
-              Component = (
-                <Component {...childProps}>
-                  {map(options, ({ text, value }) => (
-                    <Option key={`${value}${text}`} value={value}>
-                      {text}
-                    </Option>
-                  ))}
-                </Component>
-              )
             }
           } else {
             Component = <Antd.Input />
